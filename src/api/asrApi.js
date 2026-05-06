@@ -9,7 +9,7 @@ export async function sendAudioToASR(audioFile) {
     }
   );
 
-  const result = await client.predict("/predict", {
+  const result = await client.predict("/full_pipeline", {
     audio: audioFile,
   });
 
