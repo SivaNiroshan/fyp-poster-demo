@@ -1,14 +1,19 @@
 import { useState, useRef } from "react";
 import "./App.css";
-import { Client } from "@gradio/client";
 import { sendAudioToASR } from "./api/asrApi";
 
 const scripts = [
-  "நான் going to school tomorrow",
-  "இது my final year project demo",
-  "Can you switch on the light please",
-  "அவன் meetingக்கு late ஆக வந்தான்",
-  "Today நாம் ASR model test பண்ண போறோம்",
+  "Car drive பண்ணும் போது careful-ஆ ஓட்டனும்",
+  "Price-அ english-ல சொல்றீங்களா அவருக்கு தமிழ் தெரியாதா",
+  "Iphone seven வாங்கின பிறகு உங்களுக்கு ஆக பெருமை தான்",
+  "அந்த meeting reschedule பண்ணனும்",
+  "First data collection செய்ய போறம் என்டு சொல்லுவம்",
+  "உங்க family-ல எல்லாரும் ஒரு நாளை எப்படி spend பண்றாங்க",
+  "உங்க videos ரொம்ப useful-அ இருக்கு",
+  "நீங்க அனுப்பின link open ஆகல வேற link அனுப்புங்க",
+  "Bike service குடுத்திருக்கு so இண்டைக்கு வர மாட்டன்",
+  "Evening work இருக்குடா நாளைக்கு என்ன மாதி",
+  "சாப்பாட்டுக்கு என்ன பண்றனீங்க hotel-ஆ இல்லாட்டி order-ஆ",
 ];
 
 function App() {
@@ -29,6 +34,23 @@ function App() {
     });
   };
 
+  const clearScriptAudio = () => {
+    if (scriptAudio) {
+      clearGenerated(scriptAudio.id);
+      setScriptAudio(null);
+    }
+  };
+
+  const nextScript = () => {
+
+  const nextIndex = (selectedScript + 1) % scripts.length;
+
+  setSelectedScript(nextIndex);
+
+  clearScriptAudio();
+  setRecordPanelType(null);
+};
+
   const handleUpload = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -42,7 +64,7 @@ function App() {
     };
 
     if (type === "script") {
-      if (scriptAudio) clearGenerated(scriptAudio.id);
+      clearScriptAudio();
       setScriptAudio(audioObj);
     } else {
       if (randomAudio) clearGenerated(randomAudio.id);
@@ -55,10 +77,7 @@ function App() {
 
   const openRecordPanel = (type) => {
     if (type === "script") {
-      if (scriptAudio) {
-        clearGenerated(scriptAudio.id);
-        setScriptAudio(null);
-      }
+      clearScriptAudio();
     }
 
     if (type === "random") {
@@ -92,7 +111,7 @@ function App() {
       };
 
       if (type === "script") {
-        if (scriptAudio) clearGenerated(scriptAudio.id);
+        clearScriptAudio();
         setScriptAudio(audioObj);
       } else {
         if (randomAudio) clearGenerated(randomAudio.id);
@@ -100,7 +119,7 @@ function App() {
       }
 
       setRecordingType(null);
-      setRecordPanelType(type);
+      setRecordPanelType(null);
       stream.getTracks().forEach((track) => track.stop());
     };
 
@@ -113,41 +132,37 @@ function App() {
   };
 
   const generateText = async (audio) => {
+    try {
+      setGenerated((prev) => ({
+        ...prev,
+        [audio.id]: {
+          loading: true,
+        },
+      }));
 
-  try {
+      const result = await sendAudioToASR(audio.file);
 
-    setGenerated((prev) => ({
-      ...prev,
-      [audio.id]: {
-        loading: true,
-      },
-    }));
+      setGenerated((prev) => ({
+        ...prev,
+        [audio.id]: {
+          loading: false,
+          asrText: result.asrText,
+          finalText: result.finalText,
+          hints: result.hints,
+        },
+      }));
+    } catch (error) {
+      console.error(error);
 
-    const result = await sendAudioToASR(audio.file);
-
-    setGenerated((prev) => ({
-      ...prev,
-      [audio.id]: {
-        loading: false,
-        asrText: result.asrText,
-        finalText: result.finalText,
-        hints: result.hints,
-      },
-    }));
-
-  } catch (error) {
-
-    console.error(error);
-
-    setGenerated((prev) => ({
-      ...prev,
-      [audio.id]: {
-        loading: false,
-        error: "Failed to generate text",
-      },
-    }));
-  }
-};
+      setGenerated((prev) => ({
+        ...prev,
+        [audio.id]: {
+          loading: false,
+          error: "Failed to generate text",
+        },
+      }));
+    }
+  };
 
   const deleteAudio = (audio) => {
     if (audio.type === "script") {
@@ -176,28 +191,29 @@ function App() {
       </div>
 
       {generated[audio.id]?.loading && (
-  <div className="transcript-box">
-    <p>Generating transcription...</p>
-  </div>
-)}
+        <div className="transcript-box">
+          <p>Generating transcription...</p>
+        </div>
+      )}
 
-{generated[audio.id]?.error && (
-  <div className="transcript-box">
-    <p>{generated[audio.id].error}</p>
-  </div>
-)}
+      {generated[audio.id]?.error && (
+        <div className="transcript-box">
+          <p>{generated[audio.id].error}</p>
+        </div>
+      )}
 
-{generated[audio.id]?.finalText && (
-  <div className="transcript-box">
+      {generated[audio.id]?.finalText && (
+        <div className="transcript-box">
+          {/* <h4>ASR Output</h4>
+          <p>{generated[audio.id].asrText}</p>
 
-    <h4>ASR Output</h4>
-    <p>{generated[audio.id].asrText}</p>
+          <h4>XLM-R Hint Text</h4>
+          <p>{generated[audio.id].hints}</p> */}
 
-    <h4>Final Corrected Text</h4>
-    <p>{generated[audio.id].finalText}</p>
-
-  </div>
-)}
+          <h4>Final Corrected Text</h4>
+          <p>{generated[audio.id].finalText}</p>
+        </div>
+    )}
     </div>
   );
 
@@ -223,7 +239,7 @@ function App() {
     <>
       <div className="top-actions">
         <label className="upload-btn same-size-btn">
-          ⬆ Upload Audio
+          Upload Audio
           <input
             type="file"
             accept="audio/*"
@@ -237,7 +253,7 @@ function App() {
           onClick={() => openRecordPanel(type)}
           disabled={recordingType !== null}
         >
-          🎤 Record
+          Record
         </button>
       </div>
 
@@ -256,41 +272,15 @@ function App() {
         <div className="card">
           <h2>📜 Script-Based</h2>
 
-          <div className="script-selector">
+          <div className="script-header">
+            <div className="script-number">Script {selectedScript + 1}</div>
 
-  <label className="script-label">
-    Select Script
-  </label>
+            <button className="shuffle-btn" onClick={nextScript}>
+               Next Text
+          </button>
+          </div>
 
-  <select
-    className="script-dropdown"
-    value={selectedScript}
-    onChange={(e) => {
-      setSelectedScript(Number(e.target.value));
-
-      // clear existing audio when changing script
-      if (scriptAudio) {
-        clearGenerated(scriptAudio.id);
-        setScriptAudio(null);
-      }
-    }}
-  >
-    {scripts.map((_, index) => (
-      <option key={index} value={index}>
-        Script {index + 1}
-      </option>
-    ))}
-  </select>
-
-</div>
-
-<div className="script-number">
-  Script {selectedScript + 1}
-</div>
-
-<div className="script-box">
-  {scripts[selectedScript]}
-</div>
+          <div className="script-box">{scripts[selectedScript]}</div>
 
           <ControlButtons type="script" />
 
@@ -299,10 +289,6 @@ function App() {
 
         <div className="card">
           <h2>🎧 Random Speech</h2>
-
-          <p className="description">
-            Upload or record any Tamil-English speech and generate the transcript.
-          </p>
 
           <ControlButtons type="random" />
 
