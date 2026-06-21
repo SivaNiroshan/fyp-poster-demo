@@ -4,7 +4,6 @@ import { sendAudioToASR } from "./api/asrApi";
 
 const scripts = [
   "Car drive பண்ணும் போது careful-ஆ ஓட்டனும்",
-  "Price-அ english-ல சொல்றீங்களா அவருக்கு தமிழ் தெரியாதா",
   "Iphone seven வாங்கின பிறகு உங்களுக்கு ஆக பெருமை தான்",
   "அந்த meeting reschedule பண்ணனும்",
   "First data collection செய்ய போறம் என்டு சொல்லுவம்",
